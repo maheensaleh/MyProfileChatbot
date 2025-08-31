@@ -17,7 +17,8 @@ from langchain_community.llms import HuggingFaceHub
 # Hugging Face transformers
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, pipeline
 
-DATA_DIR = Path("/Users/maheensaleh/Documents/myprojects/MyProfileChatbot/data")  
+ROOT_DIR = Path(__file__).parent
+DATA_DIR = Path(f"{ROOT_DIR}/data")  
 
 def load_documents(data_dir: Path):
     docs = []
