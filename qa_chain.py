@@ -13,12 +13,14 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 
 load_dotenv()
 
-EMBED_MODEL_NAME = os.getenv("HUGGING_FACE_EMBEDDING_MODEL")
-LLM_MODEL_NAME = os.getenv("HUGGING_FACE_LLM_MODEL")
 HF_API_TOKEN = os.getenv("HUGGING_FACE_API_TOKEN")
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+
+EMBED_MODEL_NAME = os.getenv("HUGGING_FACE_EMBEDDING_MODEL")
+LLM_MODEL_NAME = os.getenv("LLM_MODEL")
+
 ROOT_DIR = Path(__file__).parent
 INDEX_DIR = Path(f"{ROOT_DIR}/data_index")  
-
 
 
 def load_retriever(index_dir: Path, k: int = 4):
@@ -35,15 +37,13 @@ def load_retriever(index_dir: Path, k: int = 4):
 
 
 def build_chain_gemini(retriever):
-    api_key = os.getenv("GOOGLE_API_KEY")
-    if not api_key:
+    if not GOOGLE_API_KEY:
         raise RuntimeError("Set GOOGLE_API_KEY in your .env to use the Gemini inference endpoint.")
-    model_name = os.getenv("GEMINI_MODEL_NAME", "gemini-1.5-flash")
 
     # Uses Google Generative AI (Gemini) hosted inference endpoint
     llm = ChatGoogleGenerativeAI(
-        model=model_name,
-        api_key=api_key,
+        model=LLM_MODEL_NAME,
+        api_key=GOOGLE_API_KEY,
         temperature=0.1,
         max_output_tokens=512,
         convert_system_message_to_human=True,

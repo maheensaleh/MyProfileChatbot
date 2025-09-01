@@ -18,9 +18,12 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-EMBED_MODEL_NAME = os.getenv("HUGGING_FACE_EMBEDDING_MODEL")
-LLM_MODEL_NAME = os.getenv("HUGGING_FACE_LLM_MODEL")
 HF_API_TOKEN = os.getenv("HUGGING_FACE_API_TOKEN")
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+
+EMBED_MODEL_NAME = os.getenv("HUGGING_FACE_EMBEDDING_MODEL")
+LLM_MODEL_NAME = os.getenv("LLM_MODEL")
+
 ROOT_DIR = Path(__file__).parent
 INDEX_DIR = Path(f"{ROOT_DIR}/data_index")  
 
@@ -39,18 +42,16 @@ class HFAPIEmbeddings(Embeddings):
 
 
 
-def build_chain_gemini(retriever):
-    api_key = os.getenv("GOOGLE_API_KEY")
-    if not api_key:
+def build_chain_gemini(retriever, _llm_repo, _max_new, _temp, _show_sources):
+    if not GOOGLE_API_KEY:
         raise RuntimeError("Set GOOGLE_API_KEY in your .env to use the Gemini inference endpoint.")
-    model_name = os.getenv("GEMINI_MODEL_NAME", "gemini-1.5-flash")
 
     # Uses Google Generative AI (Gemini) hosted inference endpoint
     llm = ChatGoogleGenerativeAI(
-        model=model_name,
-        api_key=api_key,
-        temperature=0.1,
-        max_output_tokens=512,
+        model=_llm_repo,
+        api_key=GOOGLE_API_KEY,
+        temperature=_temp,
+        max_output_tokens=_max_new,
         convert_system_message_to_human=True,
     )
 
@@ -65,7 +66,7 @@ def build_chain_gemini(retriever):
         chain_type="stuff",
         retriever=retriever,
         chain_type_kwargs={"prompt": prompt},
-        return_source_documents=True,
+        return_source_documents=_show_sources,
     )
     return qa
 
@@ -82,41 +83,26 @@ hf_token = HF_API_TOKEN
 if not hf_token:
     st.sidebar.warning("HUGGINGFACEHUB_API_TOKEN is not set. Set it in your shell before running the app.")
 
-store_dir = st.sidebar.text_input("FAISS store path", value=INDEX_DIR)
-llm_repo_id = st.sidebar.text_input("LLM repo (HF)", value=LLM_MODEL_NAME)
-embed_repo_id = st.sidebar.text_input("Embedding model (HF)", value=EMBED_MODEL_NAME)
-k = st.sidebar.number_input("Top-k retrieved chunks", min_value=1, max_value=20, value=4, step=1)
-max_new_tokens = st.sidebar.number_input("Max new tokens", min_value=64, max_value=2048, value=512, step=64)
-temperature = st.sidebar.slider("Temperature", min_value=0.0, max_value=1.0, value=0.1, step=0.05)
-show_sources = st.sidebar.checkbox("Show sources", value=False)
+# store_dir = st.sidebar.text_input("FAISS store path", value=INDEX_DIR)
 
-st.sidebar.markdown("---")
-st.sidebar.subheader("Data ingest (optional)")
-st.sidebar.caption("This will run your local `ingest.py` to rebuild the FAISS store.")
-data_dir = st.sidebar.text_input("Data directory for ingest.py", value="/data")
-if st.sidebar.button("Run ingest.py now"):
-    with st.sidebar:
-        st.write("Running `python ingest.py`…")
-        try:
-            proc = subprocess.run(
-                ["python", "ingest.py"],
-                capture_output=True,
-                text=True,
-                check=False,
-            )
-            st.code(proc.stdout or "(no stdout)")
-            if proc.stderr:
-                st.error(proc.stderr)
-            if proc.returncode == 0:
-                st.success("Ingest complete. Reload the main page if needed.")
-            else:
-                st.error(f"ingest.py exited with code {proc.returncode}")
-        except FileNotFoundError:
-            st.error("Couldn't find ingest.py in this directory. Place app.py next to ingest.py, or adjust your working directory.")
-        except Exception as e:
-            st.error(f"Error running ingest.py: {e}")
+# llm_repo_id = st.sidebar.text_input("LLM repo (HF)", value=LLM_MODEL_NAME)
+# embed_repo_id = st.sidebar.text_input("Embedding model (HF)", value=EMBED_MODEL_NAME)
 
-st.markdown("---")
+# Display model names as text (read-only)
+st.sidebar.markdown(f"**Embedding Model:** `{EMBED_MODEL_NAME}`")
+st.sidebar.markdown(f"**Chat Model:** `{LLM_MODEL_NAME}`")
+
+
+# k = st.sidebar.number_input("Top-k retrieved chunks", min_value=1, max_value=20, value=4, step=1)
+k = 4
+# max_new_tokens = st.sidebar.number_input("Max new tokens", min_value=64, max_value=2048, value=512, step=64)
+max_new_tokens = 512
+# temperature = st.sidebar.slider("Temperature", min_value=0.0, max_value=1.0, value=0.1, step=0.05)
+temperature = 0.1
+# show_sources = st.sidebar.checkbox("Show sources", value=False)
+show_sources = False
+
+
 
 # Session state for chat history
 if "history" not in st.session_state:
@@ -133,9 +119,8 @@ def _load_chain(_store_dir: str, _embed_repo: str, _llm_repo: str, _k: int, _max
         embeddings,
         allow_dangerous_deserialization=True,  # required by newer LC versions
     )
-    retriever = vs.as_retriever(search_kwargs={"k": _k})
-    # chain = build_chain(retriever, _llm_repo, _max_new, _temp, _show_sources)
-    chain = build_chain_gemini(retriever)
+    retriever = vs.as_retriever(search_kwargs={"k": 4}) # hardcoded, change later
+    chain = build_chain_gemini(retriever, _llm_repo, _max_new, _temp, _show_sources)
     return chain
 
 # Try to prepare chain
@@ -143,7 +128,7 @@ chain = None
 load_error = None
 with st.spinner("Preparing retriever & LLM…"):
     try:
-        chain = _load_chain(store_dir, embed_repo_id, llm_repo_id, k, max_new_tokens, temperature, show_sources)
+        chain = _load_chain(INDEX_DIR, EMBED_MODEL_NAME, LLM_MODEL_NAME, k, max_new_tokens, temperature, show_sources)
     except Exception as e:
         load_error = str(e)
 
@@ -182,7 +167,7 @@ if ask and user_input.strip():
     st.session_state.history.append((user_input.strip(), answer, sources))
 
 # Display history
-print(st.session_state.history)
+# print(st.session_state.history)
 for q, a, srcs in st.session_state.history:
     # print('q a')
     # print(q)
