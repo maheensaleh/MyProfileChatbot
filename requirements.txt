@@ -12,4 +12,6 @@ transformers>=4.42.0
 accelerate>=0.33.0
 huggingface_hub>=0.24.0
 faiss-cpu>=1.8
+google-generativeai 
+langchain-google-genai
 
