@@ -2,19 +2,25 @@ from pathlib import Path
 import argparse
 import sys
 import os
-from dotenv import load_dotenv
 
 from langchain_community.document_loaders import TextLoader, PyPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
 from langchain_community.embeddings import HuggingFaceEmbeddings
 
-load_dotenv()
+import os, streamlit as st
+from dotenv import load_dotenv
+load_dotenv()  # still works locally
 
-EMBED_MODEL_NAME = os.getenv("HUGGING_FACE_EMBEDDING_MODEL")
+GOOGLE_API_KEY = st.secrets.get("GOOGLE_API_KEY", os.getenv("GOOGLE_API_KEY"))
+HF_API_TOKEN =  st.secrets.get("HUGGING_FACE_API_TOKEN", os.getenv("HUGGING_FACE_API_TOKEN"))
+
+EMBED_MODEL_NAME = st.secrets.get("HUGGING_FACE_EMBEDDING_MODEL", os.getenv("HUGGING_FACE_EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2"))
+LLM_MODEL_NAME = st.secrets.get("LLM_MODEL", os.getenv("LLM_MODEL", "gemini-1.5-flash"))
+
 ROOT_DIR = Path(__file__).parent
-DATA_DIR = Path(f"{ROOT_DIR}/data")  
 INDEX_DIR = Path(f"{ROOT_DIR}/data_index")  
+DATA_DIR = Path(f"{ROOT_DIR}/data")  
 
 
 def load_documents(data_dir: Path):
