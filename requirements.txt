@@ -1,0 +1,15 @@
+langchain>=0.2.10
+langchain-community>=0.2.9
+langchain-openai>=0.1.17
+langchain-text-splitters>=0.2.2
+chromadb>=0.5.3
+pypdf>=4.2.0
+tiktoken>=0.7.0
+streamlit>=1.35.0
+python-dotenv>=1.0.1
+sentence-transformers>=2.7.0
+transformers>=4.42.0
+accelerate>=0.33.0
+huggingface_hub>=0.24.0
+faiss-cpu>=1.8
+

@@ -1,4 +1,3 @@
-import os
 import subprocess
 from pathlib import Path
 from typing import List
@@ -9,24 +8,32 @@ from langchain_community.vectorstores import FAISS
 from langchain.chains import RetrievalQA
 from langchain.prompts import PromptTemplate
 from langchain.embeddings.base import Embeddings
-
 from langchain_google_genai import ChatGoogleGenerativeAI
-
 from huggingface_hub import InferenceClient
 
+import os, streamlit as st
 from dotenv import load_dotenv
+load_dotenv()  # still works locally
 
-load_dotenv()
+GOOGLE_API_KEY = st.secrets.get("GOOGLE_API_KEY", os.getenv("GOOGLE_API_KEY"))
+HF_API_TOKEN =  st.secrets.get("HUGGING_FACE_API_TOKEN", os.getenv("HUGGING_FACE_API_TOKEN"))
 
-HF_API_TOKEN = os.getenv("HUGGING_FACE_API_TOKEN")
-GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
-
-EMBED_MODEL_NAME = os.getenv("HUGGING_FACE_EMBEDDING_MODEL")
-LLM_MODEL_NAME = os.getenv("LLM_MODEL")
+EMBED_MODEL_NAME = st.secrets.get("HUGGING_FACE_EMBEDDING_MODEL", os.getenv("HUGGING_FACE_EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2"))
+LLM_MODEL_NAME = st.secrets.get("LLM_MODEL", os.getenv("LLM_MODEL", "gemini-1.5-flash"))
 
 ROOT_DIR = Path(__file__).parent
 INDEX_DIR = Path(f"{ROOT_DIR}/data_index")  
 
+
+###### run ingest.py ######
+
+if not INDEX_DIR.exists():
+    with st.spinner("Index not found. Building FAISS index (first run)…"):
+        # Ensure ingest.py reads the same env/secrets model and paths
+        proc = subprocess.run(["python", "ingest.py"], capture_output=True, text=True)
+        if proc.returncode != 0:
+            st.error(f"ingest.py failed:\n{proc.stderr}")
+            st.stop()
 
 
 class HFAPIEmbeddings(Embeddings):
@@ -60,7 +67,7 @@ def build_chain_gemini(retriever, _llm_repo, _max_new, _temp, _show_sources):
         template=PROMPT_TMPL,
     )
 
-    # map_reduce keeps per-call size manageable and robust
+    #map reduce or stuff
     qa = RetrievalQA.from_chain_type(
         llm=llm,
         chain_type="stuff",
@@ -73,9 +80,9 @@ def build_chain_gemini(retriever, _llm_repo, _max_new, _temp, _show_sources):
 
 
 # ========================= Streamlit UI =========================
-st.set_page_config(page_title="Recruiter Profile Chatbot", page_icon="💬", layout="centered")
-st.title("💬 Recruiter Profile Chatbot")
-st.caption("RAG over your profile docs using FAISS + Hugging Face Inference API")
+st.set_page_config(page_title="Maheen's Profile Chatbot", page_icon="💬", layout="centered")
+st.title("Maheen's Profile Chatbot")
+st.caption("RAG over my profile docs using FAISS + Hugging Face Inference API")
 
 # Sidebar settings
 st.sidebar.header("Settings")
@@ -103,6 +110,7 @@ temperature = 0.1
 show_sources = False
 
 
+###################
 
 # Session state for chat history
 if "history" not in st.session_state:
@@ -123,28 +131,15 @@ def _load_chain(_store_dir: str, _embed_repo: str, _llm_repo: str, _k: int, _max
     chain = build_chain_gemini(retriever, _llm_repo, _max_new, _temp, _show_sources)
     return chain
 
-# Try to prepare chain
-chain = None
-load_error = None
+
+# Prepare chain
 with st.spinner("Preparing retriever & LLM…"):
-    try:
-        chain = _load_chain(INDEX_DIR, EMBED_MODEL_NAME, LLM_MODEL_NAME, k, max_new_tokens, temperature, show_sources)
-    except Exception as e:
-        load_error = str(e)
-
-if load_error:
-    st.error(load_error)
-    st.stop()
-
-# Chat UI
-user_input = st.text_input("Ask about the candidate’s profile:", value="", placeholder="e.g., What are their key projects?")
-ask = st.button("Ask")
+    chain = _load_chain(INDEX_DIR, EMBED_MODEL_NAME, LLM_MODEL_NAME, k, max_new_tokens, temperature, show_sources)
 
 def render_sources(docs):
     if not docs:
         return
     st.markdown("**Sources**")
-    st.error(docs)
     for i, d in enumerate(docs, start=1):
         src = d.metadata.get("source", "unknown")
         page = d.metadata.get("page", None)
@@ -152,7 +147,15 @@ def render_sources(docs):
         with st.expander(f"{i}. {label}"):
             st.write(d.page_content[:1500] + ("…" if len(d.page_content) > 1500 else ""))
 
-if ask and user_input.strip():
+# --- Chat input with Enter submit ---
+with st.form("chat-form", clear_on_submit=True):
+    user_input = st.text_input(
+        "Ask about my profile:",
+        placeholder="e.g., What are your key projects?"
+    )
+    submitted = st.form_submit_button("Ask")
+
+if submitted and user_input.strip():
     with st.spinner("Thinking…"):
         try:
             res = chain.invoke({"query": user_input.strip()})
@@ -163,15 +166,10 @@ if ask and user_input.strip():
                 answer, sources = str(res), []
         except Exception as e:
             answer, sources = f"[error] {e}", []
-
     st.session_state.history.append((user_input.strip(), answer, sources))
 
 # Display history
-# print(st.session_state.history)
 for q, a, srcs in st.session_state.history:
-    # print('q a')
-    # print(q)
-    # print(a)
     st.markdown(f"**You:** {q}")
     st.markdown(f"**Assistant:** {a}")
     if show_sources:
@@ -179,4 +177,5 @@ for q, a, srcs in st.session_state.history:
     st.markdown("---")
 
 # Footer
-st.caption("Tip: If you change model/settings in the sidebar, the app reloads the chain automatically.")
+# st.caption("Enter submits. Datastore path fixed from code/env. Models shown read-only.")
+

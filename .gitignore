@@ -1,4 +1,5 @@
 data/
 data_index/
+.streamlit/
 .env
 .DS_Store
