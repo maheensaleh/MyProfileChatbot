@@ -1,5 +1,6 @@
-langchain>=0.2.10
-langchain-community>=0.2.9
+langchain>=0.2
+langchain-community>=0.2
+langchain-google-genai>=0.1.0
 langchain-openai>=0.1.17
 langchain-text-splitters>=0.2.2
 chromadb>=0.5.3
@@ -12,6 +13,3 @@ transformers>=4.42.0
 accelerate>=0.33.0
 huggingface_hub>=0.24.0
 faiss-cpu>=1.8
-google-generativeai 
-langchain-google-genai
-
