@@ -1,6 +1,4 @@
 venv/
-data/
-data_index/
-.streamlit/
-.env
-.DS_Store
+src/data/
+# src/data_index/
+src/.env
