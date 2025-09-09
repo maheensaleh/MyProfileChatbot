@@ -82,7 +82,7 @@ def build_chain_gemini(retriever, _llm_repo, _max_new, _temp, _show_sources):
 # ========================= Streamlit UI =========================
 st.set_page_config(page_title="Maheen's Profile Chatbot", page_icon="💬", layout="centered")
 st.title("Maheen's Profile Chatbot")
-st.caption("RAG over my profile docs using FAISS + Hugging Face Inference API")
+st.caption("Chat with me and get to know Maheen's skills and expertise !")
 
 # Sidebar settings
 st.sidebar.header("Settings")
