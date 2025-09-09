@@ -1,3 +1,16 @@
+---
+title: Chat with Maheen
+emoji: 🚀
+colorFrom: green
+colorTo: yellow
+sdk: docker
+app_port: 8501
+tags:
+- streamlit
+pinned: false
+short_description: A chatbot about my profile, experience, education and skills
+---
+
 # My Profile Chatbot
 
 A chatbot about my profile, experience, education and skills
