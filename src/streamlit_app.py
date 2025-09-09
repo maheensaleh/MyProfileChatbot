@@ -25,7 +25,7 @@ ROOT_DIR = Path(__file__).parent
 INDEX_DIR = Path(f"{ROOT_DIR}/data_index")  
 
 
-###### run ingest.py ######
+###### run ingest.py (to be run locally) ######
 
 if not INDEX_DIR.exists():
     with st.spinner("Index not found. Building FAISS index (first run)…"):
@@ -82,7 +82,7 @@ def build_chain_gemini(retriever, _llm_repo, _max_new, _temp, _show_sources):
 # ========================= Streamlit UI =========================
 st.set_page_config(page_title="Maheen's Profile Chatbot", page_icon="💬", layout="centered")
 st.title("Maheen's Profile Chatbot")
-st.caption("Chat with me and get to know Maheen's skills and expertise !")
+st.caption("Want to know about my skills and experience? Enter your question below 👇")
 
 # Sidebar settings
 st.sidebar.header("Settings")
@@ -90,27 +90,18 @@ hf_token = HF_API_TOKEN
 if not hf_token:
     st.sidebar.warning("HUGGINGFACEHUB_API_TOKEN is not set. Set it in your shell before running the app.")
 
-# store_dir = st.sidebar.text_input("FAISS store path", value=INDEX_DIR)
-
-# llm_repo_id = st.sidebar.text_input("LLM repo (HF)", value=LLM_MODEL_NAME)
-# embed_repo_id = st.sidebar.text_input("Embedding model (HF)", value=EMBED_MODEL_NAME)
-
 # Display model names as text (read-only)
 st.sidebar.markdown(f"**Embedding Model:** `{EMBED_MODEL_NAME}`")
 st.sidebar.markdown(f"**Chat Model:** `{LLM_MODEL_NAME}`")
 
-
-# k = st.sidebar.number_input("Top-k retrieved chunks", min_value=1, max_value=20, value=4, step=1)
 k = 4
-# max_new_tokens = st.sidebar.number_input("Max new tokens", min_value=64, max_value=2048, value=512, step=64)
 max_new_tokens = 512
-# temperature = st.sidebar.slider("Temperature", min_value=0.0, max_value=1.0, value=0.1, step=0.05)
 temperature = 0.1
-# show_sources = st.sidebar.checkbox("Show sources", value=False)
 show_sources = False
 
 
 ###################
+
 
 # Session state for chat history
 if "history" not in st.session_state:
@@ -148,14 +139,9 @@ def render_sources(docs):
             st.write(d.page_content[:1500] + ("…" if len(d.page_content) > 1500 else ""))
 
 # --- Chat input with Enter submit ---
-with st.form("chat-form", clear_on_submit=True):
-    user_input = st.text_input(
-        "Ask about my profile:",
-        placeholder="e.g., What are your key projects?"
-    )
-    submitted = st.form_submit_button("Ask")
+user_input = st.chat_input("e.g. Tell me about your experience as AI Engineer")
 
-if submitted and user_input.strip():
+if user_input:
     with st.spinner("Thinking…"):
         try:
             res = chain.invoke({"query": user_input.strip()})
@@ -168,7 +154,7 @@ if submitted and user_input.strip():
             answer, sources = f"[error] {e}", []
     st.session_state.history.append((user_input.strip(), answer, sources))
 
-# Display history
+# Display history in logs
 for q, a, srcs in st.session_state.history:
     st.markdown(f"**You:** {q}")
     st.markdown(f"**Assistant:** {a}")
@@ -176,5 +162,3 @@ for q, a, srcs in st.session_state.history:
         render_sources(srcs)
     st.markdown("---")
 
-# Footer
-# st.caption("Enter submits. Datastore path fixed from code/env. Models shown read-only.")
