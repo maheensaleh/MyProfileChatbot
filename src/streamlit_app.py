@@ -11,7 +11,7 @@ from langchain.embeddings.base import Embeddings
 from langchain_google_genai import ChatGoogleGenerativeAI
 from huggingface_hub import InferenceClient
 
-import os, streamlit as st
+import os
 from dotenv import load_dotenv
 load_dotenv()  # still works locally
 

@@ -34,10 +34,18 @@ A chatbot about my profile, experience, education and skills
     - experience letters
     - project docs/ reports/ readme
     - linkedin stuff: get more from linkedin csv
+
 - better llm selection: using gemini for now
+    - add option to show source document for answers
     - add ui selection for gemini free models
     - improve qa pipeline and prompt
     - add prompt history for agent mem
+    - error handling in chat qa
+
+- add feature to enter job description and show how well my profile aligns with it
+
+- add sample Q/A cards
+
 - make router chains for better response
     - add router chains for education, skills, experience and default
 - UI: improve UI
