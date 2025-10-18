@@ -34,7 +34,7 @@ A chatbot about my profile, experience, education and skills
     - experience letters
     - project docs/ reports/ readme
     - linkedin stuff: get more from linkedin csv
-
+    - add data json to enter extra details, like skills expereince etc
 - better llm selection: using gemini for now
     - add option to show source document for answers
     - add ui selection for gemini free models

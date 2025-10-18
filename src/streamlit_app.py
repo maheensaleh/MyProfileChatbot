@@ -4,6 +4,7 @@ from typing import List
 import streamlit as st
 from qa_prompts import PROMPT_TMPL
 
+import langchain
 from langchain_community.vectorstores import FAISS
 from langchain.chains import RetrievalQA
 from langchain.prompts import PromptTemplate
